@@ -51,7 +51,6 @@ fn parse_packet(pstring: &str) -> List {
             content.push(Content::List(Box::new(list)));
             i += 2;
         } else {
-            println!("{}", chars[i]);
             let mut string = String::new();
             while i < chars.len() && chars[i].is_numeric() {
                 string.push(chars[i]);
@@ -77,6 +76,14 @@ fn parse_input(content: String) -> Vec<(List, List)> {
     }
 
     return pairs;
+}
+
+fn parse_input2(content: String) -> Vec<List> {
+    return content
+        .lines()
+        .filter(|s| *s != "")
+        .map(|line| parse_packet(line))
+        .collect();
 }
 
 fn recursive_print(list: List, depth: usize) {
@@ -159,7 +166,70 @@ fn part1(content: String) {
     println!("Sum is: {}", sum);
 }
 
+fn add_divider_packets(mut packets: Vec<List>) -> Vec<List> {
+    let single2 = List {
+        content: vec![Content::Integer(2)],
+    };
+    let single6 = List {
+        content: vec![Content::Integer(6)],
+    };
+    let div1 = List {
+        content: vec![Content::List(Box::new(single2))],
+    };
+    let div2 = List {
+        content: vec![Content::List(Box::new(single6))],
+    };
+
+    packets.push(div1);
+    packets.push(div2);
+
+    return packets;
+}
+
+fn bubblesort(mut packets: Vec<List>) -> Vec<List> {
+    let mut swapped = true;
+    let mut n = packets.len();
+    while swapped {
+        swapped = false;
+        for i in 0..n - 1 {
+            let cmp = compare_lists(&packets[i], &packets[i + 1]);
+            if let Order::NotOk = cmp {
+                packets.swap(i, i + 1);
+                swapped = true;
+            }
+        }
+        n -= 1;
+    }
+
+    return packets;
+}
+
+fn part2(content: String) {
+    let mut packets = parse_input2(content);
+    packets = add_divider_packets(packets);
+    packets = bubblesort(packets);
+
+    let mut key = 1;
+
+    for (i, packet) in packets.iter().enumerate() {
+        if packet.content.len() == 1 {
+            if let Content::List(l) = &packet.content[0] {
+                if l.content.len() == 1 {
+                    if let Content::Integer(x) = l.content[0] {
+                        if x == 2 || x == 6 {
+                            key *= i + 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    println!("Key: {}", key);
+}
+
 fn main() {
     let content = fs::read_to_string("input").expect("Failed to open file!");
-    part1(content);
+    part1(content.clone());
+    part2(content);
 }
