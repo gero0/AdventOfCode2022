@@ -9,8 +9,8 @@ struct Sensor {
 
 fn main() {
     let content = fs::read_to_string("input").expect("Failed to open file!");
-    part1(content);
-    // part2(content);
+    part1(content.clone());
+    part2(content);
 }
 
 fn part1(content: String) {
@@ -36,10 +36,6 @@ fn part1(content: String) {
     println!("Covered points : {}", covered_points.len());
 }
 
-fn part2(content: String) {
-
-}
-
 //Returns points covered by this sensors. In these points there can be no beacon
 fn coverage_line(sensor: Sensor, y: i32) -> Vec<(i32, i32)> {
     let mut points = vec![];
@@ -51,6 +47,57 @@ fn coverage_line(sensor: Sensor, y: i32) -> Vec<(i32, i32)> {
         if manhattan(&point, &sensor_pos) <= max_dist {
             points.push(point);
         }
+    }
+
+    return points;
+}
+
+fn part2(content: String) {
+    let sensors = parse_input(content);
+    let mut sensor_borders: Vec<Vec<(i32, i32)>> = vec![];
+
+    for sensor in sensors.iter() {
+        let points_in_frame = get_border(sensor);
+        sensor_borders.push(points_in_frame);
+    }
+
+    let mut bb = (0, 0);
+    let limit = 4000000;
+
+    for border in sensor_borders {
+        for point in border {
+            if point.0 < 0 || point.0 > limit || point.1 < 0 || point.1 > limit {
+                continue;
+            }
+            let mut found = true;
+            for sensor in &sensors {
+                let d = manhattan(&(sensor.x, sensor.y), &sensor.closest_beacon);
+                let dp = manhattan(&(sensor.x, sensor.y), &point);
+                if dp <= d {
+                    found = false;
+                    break;
+                }
+            }
+            if found {
+                bb = point;
+                break;
+            }
+        }
+    }
+    let freq = (bb.0 as u64) * 4000000 + (bb.1 as u64);
+    println!("{}", freq);
+}
+
+fn get_border(sensor: &Sensor) -> Vec<(i32, i32)> {
+    let mut points = vec![];
+    let sensor_pos = (sensor.x, sensor.y);
+    let max_dist = manhattan(&sensor_pos, &sensor.closest_beacon) + 1;
+
+    for x in -max_dist..max_dist + 1 {
+        let y = max_dist - x.abs();
+
+        points.push((sensor.x + x, sensor.y + y));
+        points.push((sensor.x + x, sensor.y - y));
     }
 
     return points;
